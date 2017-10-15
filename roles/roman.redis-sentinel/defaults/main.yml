@@ -1,0 +1,5 @@
+---
+# defaults file for roman.redis-sentinel
+
+version: 3.2.10
+redis_sentinel_port: 26379

@@ -1,0 +1,20 @@
+---
+- hosts: redis
+
+  roles:
+    - role: roman.redis-sentinel
+      redis_sentinel_port: 26379
+      bind: 0.0.0.0
+
+
+    # - role: roman.redis
+    #   redis_port: "{{ redis_port }}"
+    #   bind: 127.0.0.1
+    #   replication:
+    #     master_password: ala ma kota
+    #     sentinels:
+
+
+
+
+      

@@ -1,0 +1,31 @@
+---
+
+- name: ping
+  ping:
+
+- name: install epel-release repository
+  package:
+    name: epel-release
+    state: present
+    update_cache: yes
+
+- name: install redis
+  package:
+    name: 'redis-{{ version }}'
+    state: present
+
+- name: add config config
+  template:
+    backup: yes
+    dest: '/etc/redis-{{ redis_port }}.conf'
+    src: 'redis.conf'
+    force: no
+
+
+- debug:
+    msg: "System {{ inventory_hostname }} has bind {{ bind }}"
+
+# - name: install redis
+#   package:
+#     name: 'redis-{{ version }}'
+#     state: absent

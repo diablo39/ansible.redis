@@ -1,0 +1,5 @@
+---
+# defaults file for roman.redis
+
+version: 3.2.10
+redis_port: 6379
