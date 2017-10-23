@@ -3,3 +3,4 @@
 
 version: 3.2.10
 redis_sentinel_port: 26379
+bind: 0.0.0.0

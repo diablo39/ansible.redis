@@ -19,12 +19,14 @@
     backup: yes
     dest: '/etc/redis-{{ redis_port }}.conf'
     src: 'redis.conf'
-    force: no
+    # force: no
 
 
 - debug:
     msg: "System {{ inventory_hostname }} has bind {{ bind }}"
 
+- debug:
+    msg: "{{ replication }}"
 # - name: install redis
 #   package:
 #     name: 'redis-{{ version }}'

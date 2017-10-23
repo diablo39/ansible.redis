@@ -12,41 +12,30 @@
     name: 'redis-{{ version }}'
     state: present
 
-- name: Create tmp directory
-  file: 
-    path: /tmp/redis_sentinel_{{ redis_sentinel_port }} 
-    state: directory
-    group: root
-    owner: redis
-
-- name: add config
+- name: add config file
   template:
     backup: yes
-    dest: '/etc/redis-sentinel-{{ redis_sentinel_port }}.conf'
-    src: 'redis-sentinel.conf'
+    dest: "/etc/redis-sentinel-{{ redis_sentinel_port }}.conf"
+    src: "redis-sentinel.conf"
     group: root
     owner: redis
-    # force: no
+    force: no
+  register: redis_config_changed
 
 - name: add service configuration
   template:
     backup: yes
-    dest: '/usr/lib/systemd/system/redis-sentinel-{{ redis_sentinel_port }}.service'
-    src: 'redis-sentinel.service'
+    dest: "/usr/lib/systemd/system/redis-sentinel-{{ redis_sentinel_port }}.service"
+    src: redis-sentinel.service
     group: root
     owner: redis
-    # force: no
-
-- name: start sentinel serice
+  register: redis_service_changed
+  
+- name: (re)start sentinel serice
   service:
-    name: 'redis-sentinel-{{ redis_sentinel_port }}'
-    state: started
+    name: "redis-sentinel-{{ redis_sentinel_port }}"
+    state: "{{ 'restarted' if redis_config_changed.changed or redis_service_changed.changed else 'started' }}"
+    enabled: true
 
-
-- debug:
-    msg: "System {{ inventory_hostname }} has bind {{ bind }}"
-
-# - name: install redis
-#   package:
-#     name: 'redis-{{ version }}'
-#     state: absent
+- debug: msg="redis_sentinel_port={{ redis_sentinel_port }}"
+  run_once: true
