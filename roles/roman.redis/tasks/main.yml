@@ -1,33 +1,77 @@
----
+# ---
 
-- name: ping
-  ping:
+# # - name: install epel-release repository
+# #   package:
+# #     name: epel-release
+# #     state: present
+# #     update_cache: yes
 
-- name: install epel-release repository
-  package:
-    name: epel-release
-    state: present
-    update_cache: yes
+# # - name: install redis
+# #   package:
+# #     name: 'redis-{{ version }}'
+# #     state: present
 
-- name: install redis
-  package:
-    name: 'redis-{{ version }}'
-    state: present
+# # # run redis with default values
+# # - name: add config config
+# #   template:
+# #     backup: yes
+# #     dest: '/etc/redis-{{ redis_port }}.conf'
+# #     src: 'redis.conf'
+# #     group: root
+# #     owner: redis
+# #     force: no
+# #   register: redis_config_changed
 
-- name: add config config
-  template:
-    backup: yes
-    dest: '/etc/redis-{{ redis_port }}.conf'
-    src: 'redis.conf'
-    # force: no
+# # - name: add service configuration
+# #   template:
+# #     backup: yes
+# #     dest: "/usr/lib/systemd/system/redis-{{ redis_port }}.service"
+# #     src: redis.service
+# #     group: root
+# #     owner: redis
+# #   register: redis_service_changed
 
+# # - name: create working dir if not exists
+# #   file:
+# #     path: "/var/lib/redis_{{ redis_port }}"
+# #     state: directory
+# #     owner: redis
+# #     group: root
 
-- debug:
-    msg: "System {{ inventory_hostname }} has bind {{ bind }}"
+# # - name: (re)start redis service
+# #   service:
+# #     name: "redis-{{ redis_port }}"
+# #     state: "{{ 'restarted' if redis_config_changed.changed or redis_service_changed.changed else 'started' }}"
+# #     enabled: true
 
-- debug:
-    msg: "{{ replication }}"
-# - name: install redis
-#   package:
-#     name: 'redis-{{ version }}'
-#     state: absent
+# # # reconfigure redis via redis-cli - redis will no be restarted in case when some settings are changed
+
+# - name: redis replication setup
+#   block:
+#   - name: check if master is registered in any sentinel
+#     shell: redis-cli -h {{ item.host }} -p {{ item.port }} SENTINEL get-master-addr-by-name '{{ replication.master_name }}'
+#     register: sentinel_output
+#     with_items: "{{ replication.sentinels }}"
+#     changed_when: sentinel_output.stdout != "" # we need sentinel with registered sentinel
+  
+#   - name: set master for slave
+#     shell: redis-cli -h 127.0.1 -p {{ redis_port }} slaveof {{ item.stdout_lines[0] }}:{{ item.item.stdout_lines[1] }}
+#     with_items:  
+    
+#     - "{{ sentinel_output.results|selectattr('changed') | first }}"
+#     register: redis_master
+#     when: sentinel_output.changed
+
+#   - debug:
+#       msg: "{{ redis_master }}"
+
+#   # - debug:
+#   #     msg: "{{ sentinel_output }}"
+#   # - debug:
+#   #     msg: "{{ replication }}"
+
+#   when: replication    
+# # - name: install redis
+# #   package:
+# #     name: 'redis-{{ version }}'
+# #     state: absent

@@ -31,7 +31,7 @@
     owner: redis
   register: redis_service_changed
   
-- name: (re)start sentinel serice
+- name: (re)start sentinel service
   service:
     name: "redis-sentinel-{{ redis_sentinel_port }}"
     state: "{{ 'restarted' if redis_config_changed.changed or redis_service_changed.changed else 'started' }}"
