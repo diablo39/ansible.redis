@@ -1,50 +1,76 @@
-# ---
+---
 
-# # - name: install epel-release repository
-# #   package:
-# #     name: epel-release
-# #     state: present
-# #     update_cache: yes
+- name: install epel-release repository
+  package:
+    name: epel-release
+    state: present
+    update_cache: yes
 
-# # - name: install redis
-# #   package:
-# #     name: 'redis-{{ version }}'
-# #     state: present
+- name: install redis
+  package:
+    name: 'redis-{{ version }}'
+    state: present
+  register: redis_fresh_installation
 
-# # # run redis with default values
-# # - name: add config config
-# #   template:
-# #     backup: yes
-# #     dest: '/etc/redis-{{ redis_port }}.conf'
-# #     src: 'redis.conf'
-# #     group: root
-# #     owner: redis
-# #     force: no
-# #   register: redis_config_changed
+- name: create working dir if not exists
+  file:
+    path: "/var/lib/redis_{{ redis_port }}"
+    state: directory
+    owner: redis
+    group: root
 
-# # - name: add service configuration
-# #   template:
-# #     backup: yes
-# #     dest: "/usr/lib/systemd/system/redis-{{ redis_port }}.service"
-# #     src: redis.service
-# #     group: root
-# #     owner: redis
-# #   register: redis_service_changed
+- name: add/modify config file
+  template:
+    backup: yes
+    dest: '/etc/redis-{{ redis_port }}.conf'
+    src: 'redis.conf'
+    group: root
+    owner: redis
+  register: redis_config_changed
+  when: redis_fresh_installation.changed or not redis_replication
 
-# # - name: create working dir if not exists
-# #   file:
-# #     path: "/var/lib/redis_{{ redis_port }}"
-# #     state: directory
-# #     owner: redis
-# #     group: root
+# run redis with default values
 
-# # - name: (re)start redis service
-# #   service:
-# #     name: "redis-{{ redis_port }}"
-# #     state: "{{ 'restarted' if redis_config_changed.changed or redis_service_changed.changed else 'started' }}"
-# #     enabled: true
+- name: add/modify service configuration
+  template:
+    backup: yes
+    dest: "/usr/lib/systemd/system/redis-{{ redis_port }}.service"
+    src: redis.service
+    group: root
+    owner: redis
+  register: redis_service_changed
 
-# # # reconfigure redis via redis-cli - redis will no be restarted in case when some settings are changed
+- name: (re)start redis service
+  service:
+    name: "redis-{{ redis_port }}"
+    state: "{{ 'restarted' if (redis_config_changed and redis_config_changed.changed) or redis_service_changed.changed else 'started' }}"
+    enabled: true
+
+# - name: setup standalone installation
+#   block:
+
+#   when: standalone
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# - name: set reris configuration
+#   shell: redis-cli -h {{ item.host }} -p {{ item.port }} SENTINEL get-master-addr-by-name '{{ replication.master_name }}'
+
+
+
+
+# # reconfigure redis via redis-cli - redis will no be restarted in case when some settings are changed
 
 # - name: redis replication setup
 #   block:
@@ -70,8 +96,10 @@
 #   # - debug:
 #   #     msg: "{{ replication }}"
 
-#   when: replication    
+#   when: replication  
+
 # # - name: install redis
 # #   package:
 # #     name: 'redis-{{ version }}'
 # #     state: absent
+

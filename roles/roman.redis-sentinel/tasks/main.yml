@@ -7,7 +7,7 @@
     state: present
     update_cache: yes
 
-- name: install redis
+- name: install redis sentinel
   package:
     name: 'redis-{{ version }}'
     state: present
