@@ -46,20 +46,6 @@
     state: "{{ 'restarted' if (redis_config_changed and redis_config_changed.changed) or redis_service_changed.changed else 'started' }}"
     enabled: true
 
-# - name: setup standalone installation
-#   block:
-
-#   when: standalone
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -97,9 +83,3 @@
 #   #     msg: "{{ replication }}"
 
 #   when: replication  
-
-# # - name: install redis
-# #   package:
-# #     name: 'redis-{{ version }}'
-# #     state: absent
-
