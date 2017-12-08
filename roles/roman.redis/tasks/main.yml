@@ -27,9 +27,24 @@
     group: root
     owner: redis
   register: redis_config_changed
-  when: redis_fresh_installation.changed or not redis_replication
+  when: redis_fresh_installation.changed
 
-# run redis with default values
+- name: change instance configuration
+  block:
+    - name: generate config
+      template:
+        backup: no
+        dest: '/tmp/redis-{{ redis_port }}.set_config'
+        src: 'redis_set_config.j2'
+        group: root
+        owner: redis
+    - debug:
+        msg: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }}"
+    # - name: remove ggg
+    #   file:
+    #     path: '/tmp/redis-{{ redis_port }}.set_config'
+    #     state: absent
+
 
 - name: add/modify service configuration
   template:

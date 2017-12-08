@@ -1,0 +1,4 @@
+{% for config in redis_configuration.splitlines() %}
+CONFIG SET {{ config }}
+{% endfor %}
+CONFIG REWRITE
