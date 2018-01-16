@@ -29,23 +29,6 @@
   register: redis_config_changed
   when: redis_fresh_installation.changed
 
-- name: change instance configuration
-  block:
-    - name: generate config
-      template:
-        backup: no
-        dest: '/tmp/redis-{{ redis_port }}.set_config'
-        src: 'redis_set_config.j2'
-        group: root
-        owner: redis
-    - debug:
-        msg: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }}"
-    # - name: remove ggg
-    #   file:
-    #     path: '/tmp/redis-{{ redis_port }}.set_config'
-    #     state: absent
-
-
 - name: add/modify service configuration
   template:
     backup: yes
@@ -61,7 +44,20 @@
     state: "{{ 'restarted' if (redis_config_changed and redis_config_changed.changed) or redis_service_changed.changed else 'started' }}"
     enabled: true
 
-
+- name: change instance configuration
+  block:
+    - name: generate temp config
+      template:
+        backup: no
+        dest: '/tmp/redis-{{ redis_port }}.set_config'
+        src: 'redis_set_config.j2'
+        group: root
+        owner: redis
+    - shell: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }}"
+    - name: remove temp config
+      file:
+        path: '/tmp/redis-{{ redis_port }}.set_config'
+        state: absent
 
 
 
