@@ -1,4 +1,5 @@
 {% for config in redis_configuration.splitlines() %}
 CONFIG SET {{ config }}
 {% endfor %}
+CONFIG SET requirepass '{{ redis_auth }}'
 CONFIG REWRITE

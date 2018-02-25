@@ -18,16 +18,19 @@
     state: directory
     owner: redis
     group: root
+- debug:
+    msg: "{{ redis_port }}"
 
 - name: add/modify config file
   template:
     backup: yes
     dest: '/etc/redis-{{ redis_port }}.conf'
-    src: 'redis.conf'
+    src: 'redis.conf.j2'
     group: root
     owner: redis
+    force: yes
   register: redis_config_changed
-  when: redis_fresh_installation.changed
+
 
 - name: add/modify service configuration
   template:
@@ -53,12 +56,16 @@
         src: 'redis_set_config.j2'
         group: root
         owner: redis
-    - shell: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }}"
+    - shell: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}'"
+      register: reconfigure_out
     - name: remove temp config
       file:
         path: '/tmp/redis-{{ redis_port }}.set_config'
         state: absent
-
+    - fail:
+        msg: "executed command: {{ reconfigure_out.cmd }} with output: {{ reconfigure_out.stdout }}"
+      when: "'ERR' in reconfigure_out.stdout"
+    
 
 
 # - name: set reris configuration
@@ -69,28 +76,69 @@
 
 # # reconfigure redis via redis-cli - redis will no be restarted in case when some settings are changed
 
-# - name: redis replication setup
-#   block:
-#   - name: check if master is registered in any sentinel
-#     shell: redis-cli -h {{ item.host }} -p {{ item.port }} SENTINEL get-master-addr-by-name '{{ replication.master_name }}'
-#     register: sentinel_output
-#     with_items: "{{ replication.sentinels }}"
-#     changed_when: sentinel_output.stdout != "" # we need sentinel with registered sentinel
+- name: redis replication setup
+  block:
+  - name: check current mode
+    shell: redis-cli -h {{ bind }} -p {{ redis_port }}  -a '{{ redis_auth }}' info replication | grep role | cut -d':' -f2
+    register: current_redis_role
+    changed_when: false
+
+  - name: check if master is registered in any sentinel
+    shell: redis-cli -h {{ item.host }} -p {{ item.redis_sentinel_port }} SENTINEL get-master-addr-by-name '{{ redis_replication.master_name }}'
+    register: sentinel_output
+    with_items: "{{ redis_replication.sentinels }}"
+    changed_when: sentinel_output.stdout != "" # we need sentinel with registered sentinel
   
-#   - name: set master for slave
-#     shell: redis-cli -h 127.0.1 -p {{ redis_port }} slaveof {{ item.stdout_lines[0] }}:{{ item.item.stdout_lines[1] }}
-#     with_items:  
-    
-#     - "{{ sentinel_output.results|selectattr('changed') | first }}"
-#     register: redis_master
-#     when: sentinel_output.changed
+  - name: master detected
+    block:
+    - name: register new master in each sentinel
+      shell: redis-cli -h {{ item.host }} -p {{ item.redis_sentinel_port }} SENTINEL monitor '{{ redis_replication.master_name }}' {{ bind }} {{ redis_port }} {{ redis_replication.quorum }}
+      register: new_master_registration
+      with_items: "{{ redis_replication.sentinels }}"
+      when: sentinel_output.changed == false
+
+
+    - name: bad master configuration - set instance as slave
+      block:
+      - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}' masterauth '{{ redis_auth }}'
+        with_items:  
+        - "{{ sentinel_output.results|selectattr('changed') | first }}"
+        when: sentinel_output.changed and (item.stdout_lines[0] != bind or redis_port != item.stdout_lines[1]|int )
+
+      - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}' slaveof {{ item.stdout_lines[0] }} {{ item.stdout_lines[1] }}
+        with_items:  
+        - "{{ sentinel_output.results|selectattr('changed') | first }}"
+        when: sentinel_output.changed and (item.stdout_lines[0] != bind or redis_port != item.stdout_lines[1]|int )
+        register: redis_master_as_slave
+      
+      - debug:
+          msg: "{{ redis_master_as_slave }}"
+         
+
+        
+    when: "'master' in current_redis_role.stdout"
+
+  - name: slave detected
+    block:
+    - debug:
+        msg: "slave detected"
+    when: "'slave' in current_redis_role.stdout"
+
+
+  
+  # - name: set master for slave
+  #   shell: redis-cli -h {{ bind }} -p {{ redis_port }} slaveof {{ item.stdout_lines[0] }}:{{ item.item.stdout_lines[1] }}
+  #   with_items:  
+  #   - "{{ sentinel_output.results|selectattr('changed') | first }}"
+  #   register: redis_master
+  #   when: sentinel_output.changed and item.stdout_lines[0] != bind and redis_port != item.item.stdout_lines[1]
 
 #   - debug:
 #       msg: "{{ redis_master }}"
 
-#   # - debug:
-#   #     msg: "{{ sentinel_output }}"
-#   # - debug:
-#   #     msg: "{{ replication }}"
+  # - debug:
+  #     msg: "{{ sentinel_output }}"
+  # - debug:
+  #     msg: "{{ redis_replication }}"
 
-#   when: replication  
+  when: redis_replication  

@@ -5,3 +5,4 @@ version: 3.2.10
 redis_port: 6379
 redis_replication:
 redis_configuration: ""
+redis_auth: ""
