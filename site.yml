@@ -17,13 +17,13 @@
     #   role: roman.redis
     #   bind: 127.0.0.1
     #   redis_port: 6379
-    #   redis_auth: 'ala ma kota'
+    #   redis_auth: 'alamakota'
     #   redis_configuration: | 
     #     slave-priority 200
     #   redis_replication:
     #     quorum: 2
     #     master_name: MyMaster1
-    #     master_password: ala ma kota
+    #     master_password: alamakota
     #     sentinels:
     #       - host: 127.0.0.1
     #         redis_sentinel_port: 26379
@@ -34,7 +34,7 @@
       role: roman.redis
       bind: 127.0.0.1
       redis_port: 6380
-      redis_auth: 'ala ma kota'
+      redis_auth: 'alamakota'
       redis_configuration: | 
         slave-priority 200
       redis_replication:

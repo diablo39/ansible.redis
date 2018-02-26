@@ -100,20 +100,24 @@
 
     - name: bad master configuration - set instance as slave
       block:
-      - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}' masterauth '{{ redis_auth }}'
+      - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}'  CONFIG SET masterauth {{ redis_auth }}
         with_items:  
         - "{{ sentinel_output.results|selectattr('changed') | first }}"
         when: sentinel_output.changed and (item.stdout_lines[0] != bind or redis_port != item.stdout_lines[1]|int )
-
+        register: set_masterauth_for_redis
+      - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}'  CONFIG REWRITE
+      # - debug:
+      #     msg: "{{ set_masterauth_for_redis }}"
+# add fails
       - shell: redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}' slaveof {{ item.stdout_lines[0] }} {{ item.stdout_lines[1] }}
         with_items:  
         - "{{ sentinel_output.results|selectattr('changed') | first }}"
         when: sentinel_output.changed and (item.stdout_lines[0] != bind or redis_port != item.stdout_lines[1]|int )
         register: redis_master_as_slave
       
-      - debug:
-          msg: "{{ redis_master_as_slave }}"
-         
+      # - debug:
+      #     msg: "{{ redis_master_as_slave }}"
+    # add fails     
 
         
     when: "'master' in current_redis_role.stdout"
@@ -123,22 +127,5 @@
     - debug:
         msg: "slave detected"
     when: "'slave' in current_redis_role.stdout"
-
-
-  
-  # - name: set master for slave
-  #   shell: redis-cli -h {{ bind }} -p {{ redis_port }} slaveof {{ item.stdout_lines[0] }}:{{ item.item.stdout_lines[1] }}
-  #   with_items:  
-  #   - "{{ sentinel_output.results|selectattr('changed') | first }}"
-  #   register: redis_master
-  #   when: sentinel_output.changed and item.stdout_lines[0] != bind and redis_port != item.item.stdout_lines[1]
-
-#   - debug:
-#       msg: "{{ redis_master }}"
-
-  # - debug:
-  #     msg: "{{ sentinel_output }}"
-  # - debug:
-  #     msg: "{{ redis_replication }}"
 
   when: redis_replication  
