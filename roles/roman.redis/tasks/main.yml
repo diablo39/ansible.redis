@@ -97,6 +97,13 @@
       with_items: "{{ redis_replication.sentinels }}"
       when: sentinel_output.changed == false
 
+    - name: register new master in each sentinel
+      shell: redis-cli -h {{ item.host }} -p {{ item.redis_sentinel_port }} SENTINEL SET {{ redis_replication.master_name }} auth-pass {{ redis_auth }}
+      with_items: "{{ redis_replication.sentinels }}"
+      when: sentinel_output.changed == false  
+      register: new_master_password_setup 
+    - debug:
+        msg: "{{ new_master_password_setup}}"
 
     - name: bad master configuration - set instance as slave
       block:
