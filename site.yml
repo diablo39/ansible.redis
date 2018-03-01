@@ -31,7 +31,7 @@
 
     - name: second instance
       role: roman.redis
-      bind: 0.0.0.0
+      bind: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       redis_port: 6380
       redis_auth: 'alamakota'
       redis_configuration: | 
