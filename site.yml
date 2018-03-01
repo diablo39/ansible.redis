@@ -1,6 +1,6 @@
 ---
-- hosts: 
-    192.168.17.137
+- hosts: all
+  serial: 1
 
   roles:
     # works as designed, disabling execution
@@ -15,7 +15,7 @@
 
     - name: first instance
       role: roman.redis
-      bind: 127.0.0.1
+      bind: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       redis_port: 6379
       redis_auth: 'alamakota'
       redis_configuration: | 
@@ -23,30 +23,26 @@
       redis_replication:
         quorum: 2
         master_name: MyMaster1
-        master_password: alamakota
         sentinels:
-          - host: 127.0.0.1
+          - host: 192.168.17.131
             redis_sentinel_port: 26379
-          - host: 127.0.0.1
-            redis_sentinel_port: 26380
+          - host: 192.168.17.137
+            redis_sentinel_port: 26379
 
     - name: second instance
       role: roman.redis
-      bind: 127.0.0.1
+      bind: 0.0.0.0
       redis_port: 6380
       redis_auth: 'alamakota'
       redis_configuration: | 
         slave-priority 200
       redis_replication:
         quorum: 2
-        master_name: MyMaster1
-     
+        master_name: MyMaster2
         sentinels:
-          - host: 127.0.0.1
+          - host: 192.168.17.131
             redis_sentinel_port: 26379
-          - host: 127.0.0.1
-            redis_sentinel_port: 26380
+          - host: 192.168.17.137
+            redis_sentinel_port: 26379
         
-
-
-      
+        

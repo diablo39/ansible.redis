@@ -17,7 +17,7 @@
     path: "/var/lib/redis_{{ redis_port }}"
     state: directory
     owner: redis
-    group: root
+    group: redis
 - debug:
     msg: "{{ redis_port }}"
 
@@ -28,7 +28,7 @@
     src: 'redis.conf.j2'
     group: root
     owner: redis
-    force: yes
+    force: no
   register: redis_config_changed
 
 
@@ -58,10 +58,10 @@
         owner: redis
     - shell: "cat /tmp/redis-{{ redis_port }}.set_config | redis-cli -h {{ bind }} -p {{ redis_port }} -a '{{ redis_auth }}'"
       register: reconfigure_out
-    - name: remove temp config
-      file:
-        path: '/tmp/redis-{{ redis_port }}.set_config'
-        state: absent
+    # - name: remove temp config
+    #   file:
+    #     path: '/tmp/redis-{{ redis_port }}.set_config'
+    #     state: absent
     - fail:
         msg: "executed command: {{ reconfigure_out.cmd }} with output: {{ reconfigure_out.stdout }}"
       when: "'ERR' in reconfigure_out.stdout"
